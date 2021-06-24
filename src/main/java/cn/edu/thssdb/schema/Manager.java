@@ -16,12 +16,14 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class Manager {
 	// metadata路径
 	private String metadataPath = Global.ROOT_DIR + "metadata.db";
+
 	// sessionId生成器
 	private Random sessionIdGenerator = new Random();
 	// sessionId和session的映射
 	private Map<Long, Session> sessionMap = new ConcurrentHashMap<>();
 	// 每个manager都有一个系统用户
 	private Session sysSession;
+
 	// 所有的数据库名称
 	private ArrayList<String> databaseNames = new ArrayList<>();
 	// 对databaseNames（上面这个列表）进行操作时的锁
@@ -49,6 +51,11 @@ public class Manager {
 	 */
 	private void loadMeta() {
   		// TODO
+//		ArrayList<String> names = IOManager.loadMeta(metadataPath);
+		ArrayList<String> names = null;
+		if(names != null){
+			databaseNames.addAll(names);
+		}
 	}
 
 	/**
@@ -56,6 +63,10 @@ public class Manager {
 	 */
 	private void saveMeta() {
 		// TODO
+		if(needWrite){
+
+			needWrite = false;
+		}
 	}
 
   	public void createDatabaseIfNotExists(String databaseName) {
@@ -147,14 +158,14 @@ public class Manager {
 			databasesLock.writeLock().unlock();
 		}
 
-		/* 释放掉原数据库的读锁 */
-		if (curDatabase != null) {
-			while (curDatabase.releaseDBReadLock());
-		}
-
-		/* 对目标数据库上读锁 */
-		targetDatabase.acquireDBReadLock();
-		session.setDatabase(targetDatabase);
+//		/* 释放掉原数据库的读锁 */
+//		if (curDatabase != null) {
+//			while (curDatabase.releaseDBReadLock());
+//		}
+//
+//		/* 对目标数据库上读锁 */
+//		targetDatabase.acquireDBReadLock();
+//		session.setDatabase(targetDatabase);
   	}
 
 	/** 用户登录时获得session */

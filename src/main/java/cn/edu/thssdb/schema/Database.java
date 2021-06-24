@@ -1,8 +1,11 @@
 package cn.edu.thssdb.schema;
 
+import cn.edu.thssdb.io.IOUtils;
 import cn.edu.thssdb.query.QueryResult;
 import cn.edu.thssdb.query.QueryTable;
+import cn.edu.thssdb.utils.Global;
 
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -10,26 +13,104 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class Database {
 
   private String name;
+  private String dirName;
+  private String metaFilePath;
+  private boolean needWrite;
   private HashMap<String, Table> tables;
   ReentrantReadWriteLock lock;
 
-  public Database(String name) {
+
+  public Database(String name) throws IOException {
     this.name = name;
     this.tables = new HashMap<>();
     this.lock = new ReentrantReadWriteLock();
-    recover();
+    this.dirName = Global.ROOT_DIR + name + File.separator;
+    this.needWrite = false;
+
+    File file = new File(this.dirName);
+    if (!file.exists()){
+      file.mkdirs();
+    }
+    else{
+      loadMeta();
+    }
+  }
+
+  private void loadMeta() throws IOException {
+    ArrayList<String> tableNames = IOUtils.loadMeta(metaFilePath);
+    if(tableNames != null && tableNames.size() !=0){
+      for (int i=0;i<tableNames.size();i++){
+        tables.put(name,new Table(this.name,name));
+      }
+    }
   }
 
   private void persist() {
     // TODO
+//    try {
+//      lock.writeLock().lock();
+//      if (this.tables == null){
+//
+//      }
+////      File dir = new File(Global.DATABASE_DIR+ File.separator+name);
+//      File dir = null;
+//      if (!dir.exists() && !dir.mkdirs()){
+//
+//      }
+//      ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(dir.toString()+File.separator+"TABLES_NAME"));
+//      for (String tableName: tables.keySet()){
+//        oos.writeObject(tableName);
+//        ObjectOutputStream oosSchema = new ObjectOutputStream(new FileOutputStream(dir.toString()+File.separator+tableName+"_SCHEMA"));
+//        for (Column c: tables.get(tableName).columns) {
+//          oosSchema.writeObject(c.toString());
+//        }
+//        oosSchema.close();
+//        Table table = tables.get(tableName);
+////        if (table == null) {
+////          System.err.println("Table is null in index while trying to persist database.");
+////        }
+////        else {
+////          if (!table.persist()) {
+////          }
+////        }
+//        oos.close();
+//      }
+//    } catch (FileNotFoundException e) {
+//      e.printStackTrace();
+//    } catch (IOException e) {
+//      e.printStackTrace();
+//    } finally{
+//      lock.writeLock().unlock();
+//    }
   }
 
   public void create(String name, Column[] columns) {
     // TODO
+    try {
+      lock.writeLock().lock();
+//      if (checkTableExist(tableName)) {
+//        throw new TableAlreadyExistException();
+//      }
+      Table table = new Table(this.name, name, columns);
+      tables.put(name, table);
+    }
+    finally {
+      lock.writeLock().unlock();
+    }
   }
 
   public void drop(String name) {
     // TODO
+    try {
+      lock.writeLock().lock();
+//      if (tables.get(name) == null) {
+//        throw new TableNotExistException();
+//      }
+      tables.remove(name);
+    }
+    finally {
+      lock.writeLock().unlock();
+    }
   }
 
   public String select(QueryTable[] queryTables) {
@@ -117,5 +198,15 @@ public class Database {
 
   public Table getTableByTableName(String tableName) {
     return tables.get(tableName);
+  }
+
+  public void releaseDBWriteLock() {
+  }
+
+  public boolean releaseDBReadLock() {
+    return false;
+  }
+
+  public void degradeToReadLock() {
   }
 }
