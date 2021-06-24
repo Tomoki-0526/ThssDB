@@ -19,7 +19,7 @@ import cn.edu.thssdb.statement.transaction.CommitStmt;
 import cn.edu.thssdb.statement.transaction.TransactionStmt;
 import cn.edu.thssdb.type.ColumnType;
 import cn.edu.thssdb.utils.Tool;
-import javafx.util.Pair;
+import cn.edu.thssdb.utils.Pair;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.misc.Interval;
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -173,7 +173,7 @@ public class MyVisitor extends SQLBaseVisitor<Object>{
         int valueCount = ctx.literal_value().size();
         ArrayList<Comparable> values = new ArrayList<>(valueCount);
         for (SQLParser.Literal_valueContext i : ctx.literal_value()) {
-            Comparable value = ((Pair<ColumnType, Comparable>) visit(i)).getValue();
+            Comparable value = ((Pair<ColumnType, Comparable>) visit(i)).right;
             values.add(value);
         }
         return values;

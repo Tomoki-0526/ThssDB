@@ -11,7 +11,7 @@ import cn.edu.thssdb.statement.Expression;
 import cn.edu.thssdb.transaction.Session;
 import cn.edu.thssdb.type.ColumnType;
 import cn.edu.thssdb.utils.Global;
-import javafx.util.Pair;
+import cn.edu.thssdb.utils.Pair;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -66,7 +66,7 @@ public class UpdateStmt extends ExecuteStatement {
             if (condition.calculateResult(columns_, entries)) {
                 Pair<ColumnType, Comparable> value = this.expression.calculateResult(columns_, entries);
                 // 计算结果为空，但是改列不允许为空
-                if (value.getValue() == null && targetColumn.isNotNull()) {
+                if (value.right == null && targetColumn.isNotNull()) {
                     execSuccess = false;
                     errorMsg = "Exception : trying to assign null to not null column!";
                     break;
@@ -74,7 +74,7 @@ public class UpdateStmt extends ExecuteStatement {
                 Comparable targetResult;
                 // 类型转换失败
                 try {
-                    targetResult = Expression.convertToTargetType(value.getValue(), targetType);
+                    targetResult = Expression.convertToTargetType(value.right, targetType);
                 } catch (Exception e) {
                     execSuccess = false;
                     errorMsg = "Exception: type cast failed!";

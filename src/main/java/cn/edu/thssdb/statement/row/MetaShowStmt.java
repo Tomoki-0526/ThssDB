@@ -23,7 +23,7 @@ public class MetaShowStmt extends ExecuteStatement {
         if (table == null) throw new NotExistException("table", tableName);
 
         table.acquireTBReadLock();
-        ExecuteResult result = new ExecuteResult(table.getColumns(), true);
+        ExecuteResult result = new ExecuteResult(table.getColumns());
         table.releaseTBReadLock();
 
         return result;
