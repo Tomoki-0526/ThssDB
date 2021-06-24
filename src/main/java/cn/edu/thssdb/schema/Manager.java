@@ -1,5 +1,9 @@
 package cn.edu.thssdb.schema;
 
+import cn.edu.thssdb.exception.DBException;
+import cn.edu.thssdb.exception.DatabaseExistException;
+import cn.edu.thssdb.exception.DatabaseNotExistException;
+import cn.edu.thssdb.exception.DatabaseOccupiedException;
 import cn.edu.thssdb.transaction.Session;
 import cn.edu.thssdb.utils.Global;
 
@@ -58,14 +62,10 @@ public class Manager {
 		// TODO
 	}
 
-  	public void createDatabaseIfNotExists(String databaseName) {
+  	public void createDatabaseIfNotExists(String databaseName) throws DBException {
     	/* 检查数据库是否已存在 */
 		if (databaseNames.contains(databaseName)) {
-			try {
-				throw new Exception(databaseName + "already exists.");
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
+			throw new DatabaseExistException(databaseName + "already exists.");
 		}
 
 		Database database = new Database(databaseName);
@@ -76,14 +76,10 @@ public class Manager {
 		saveMeta();
 	}
 
-  	public void deleteDatabase(Session session, String databaseName) {
+  	public void deleteDatabase(Session session, String databaseName) throws DBException{
   		/* 检查数据库是否存在 */
 		if (!databaseNames.contains(databaseName)) {
-			try {
-				throw new Exception(databaseName + "doesn't exists.");
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
+			throw new DatabaseNotExistException(databaseName + "doesn't exists.");
 		}
 
 		/* 获得待删除的数据库 */
@@ -96,11 +92,7 @@ public class Manager {
 		/* 获得database的写锁 */
 		boolean writeLock = database.getWriteLock();
 		if (!writeLock) {
-			try {
-				throw new Exception(databaseName + "is being used!");
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
+			throw new DatabaseOccupiedException(databaseName + "is being used!");
 		}
 		database.clear();
 		databaseNames.remove(databaseName);
@@ -121,14 +113,10 @@ public class Manager {
 		saveMeta();
   	}
 
-  	public void switchDatabase(Session session, String targetDatabaseName) {
+  	public void switchDatabase(Session session, String targetDatabaseName) throws DBException {
 		/* 检查数据库是否存在 */
 		if (!databaseNames.contains(targetDatabaseName)) {
-			try {
-				throw new Exception(targetDatabaseName + "doesn't exists.");
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
+			throw new DatabaseNotExistException(targetDatabaseName + "doesn't exists.");
 		}
 
 		/* 获取当前用户正在使用的数据库 */
@@ -158,6 +146,7 @@ public class Manager {
   	}
 
 	/** 用户登录时获得session */
+	// 是原来的userConnect
 	public synchronized Session getConnectSession() 
 	{
 		while (true) 
@@ -173,18 +162,21 @@ public class Manager {
 	}
 
 	/** 判断用户当前是否已经登录 */
+	// 是原来的isValidUser
 	public boolean isConnected(long sessionId)
 	{
 		return sessionMap.containsKey(sessionId);
 	}
 
 	/** 根据sessionId获取session */
+	// getUserSession
 	public Session getSession(long sessionId)
 	{
 		return sessionMap.get(sessionId);
 	}
 
 	/** 用户登出时清除session */
+	// userExit
 	public void removeSession(long sessionId)
 	{
 		Session session = sessionMap.get(sessionId);
@@ -214,7 +206,7 @@ public class Manager {
   	}
 
 	/**
-	 * 申请写锁
+	 * 申请写锁 acquireManagerWriteLock
 	 * @return
 	 */
 	public boolean managerWriteLock() {
@@ -227,7 +219,7 @@ public class Manager {
 	}
 
 	/**
-	 * 释放写锁
+	 * 释放写锁 releaseManagerWriteLock
 	 * @return
 	 */
 	public boolean managerWriteUnlock() {
@@ -239,7 +231,7 @@ public class Manager {
 	}
 
 	/**
-	 * 申请读锁
+	 * 申请读锁 acquireManagerReadLock
 	 * @return
 	 */
 	public boolean managerReadLock() {
@@ -251,7 +243,7 @@ public class Manager {
 	}
 
 	/**
-	 * 释放读锁
+	 * 释放读锁 releaseManagerReadLock
 	 * @return
 	 */
 	public boolean managerReadUnlock() {
