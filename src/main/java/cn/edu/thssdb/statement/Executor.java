@@ -1,10 +1,12 @@
 package cn.edu.thssdb.statement;
 
+import java.io.IOException;
 import java.util.ArrayList;
 
 import cn.edu.thssdb.parser.SQLBaseVisitor;
 import cn.edu.thssdb.parser.SQLVisitor;
 import cn.edu.thssdb.statement.transaction.CommitStmt;
+import cn.edu.thssdb.transaction.LogManager;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 
@@ -39,8 +41,7 @@ public class Executor
      * @param session 用户session
      * @return
      */
-    public static ExecuteResult execute(String statement, Session session)
-    {
+    public static ExecuteResult execute(String statement, Session session) throws Exception {
         ExecuteResult res;
         /* 检查用户是否登录 */
         if (session == null)
@@ -106,8 +107,7 @@ public class Executor
      * @param statement
      * @param session
      */
-    private static void commit(ExecuteStatement statement, Session session)
-    {
+    private static void commit(ExecuteStatement statement, Session session) throws Exception {
         if (!(statement instanceof CommitStmt)) {
             if (statement.needLog()) {
                 session.addOperation(statement);
