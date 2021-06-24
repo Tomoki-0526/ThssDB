@@ -7,17 +7,19 @@ import cn.edu.thssdb.utils.Global;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class Database {
 
   private String name;
   private String dirName;
-  private String metaFilePath;
-  private boolean needWrite;
   private HashMap<String, Table> tables;
   ReentrantReadWriteLock lock;
+  private String metaFilePath;
+  private boolean needWrite;
 
 
   public Database(String name) throws IOException {
@@ -42,6 +44,15 @@ public class Database {
       for (int i=0;i<tableNames.size();i++){
         tables.put(name,new Table(this.name,name));
       }
+    }
+  }
+
+  private void saveMeta() throws IOException {
+    if(needWrite){
+      ArrayList<String> tableNames = new ArrayList<>();
+      String[] names = tables.keySet().toArray(new String[tables.size()]);
+      tableNames.addAll(Arrays.asList(names));
+      IOUtils.saveMeta(metaFilePath, tableNames);
     }
   }
 
@@ -84,55 +95,68 @@ public class Database {
 //    }
   }
 
-  public void create(String name, Column[] columns) {
+  public Table create(String name, Column[] columns) throws IOException {
     // TODO
-    try {
-      lock.writeLock().lock();
-//      if (checkTableExist(tableName)) {
-//        throw new TableAlreadyExistException();
-//      }
-      Table table = new Table(this.name, name, columns);
-      tables.put(name, table);
+    if (tables.containsKey(name)) {
+//      throw new AlreadyExistException("table", name);
     }
-    finally {
-      lock.writeLock().unlock();
+    Table table = new Table(this.name,name,columns);
+    tables.put(name, table);
+    needWrite = true;
+    saveMeta();
+    return table;
+  }
+
+  public void drop(String name) throws IOException {
+    // TODO
+    if (!tables.containsKey(name)) {
+//      throw new AlreadyExistException("table", name);
     }
+    Table table = tables.get(name);
+    tables.remove(name);
+    needWrite = true;
+//    table.acquireTBWriteLock();
+    table.removeDataFile();
+//    table.releaseTBWriteLock();
+    saveMeta();
   }
 
-  public void drop(String name) {
-    // TODO
-    try {
-      lock.writeLock().lock();
-//      if (tables.get(name) == null) {
-//        throw new TableNotExistException();
-//      }
-      tables.remove(name);
+//  public String select(QueryTable[] queryTables) {
+//    // TODO
+//    QueryResult queryResult = new QueryResult(queryTables);
+//    return null;
+//  }
+
+//  private void recover() {
+//    // TODO
+//  }
+
+//  public void quit() {
+//    // TODO
+//  }
+
+  public void dropAllTable(){
+    for (Map.Entry<String, Table> entry : tables.entrySet()) {
+      Table table = entry.getValue();
+//      table.acquireTBWriteLock();
+      entry.getValue().removeDataFile();
+//      table.releaseTBWriteLock();
     }
-    finally {
-      lock.writeLock().unlock();
-    }
+    tables.clear();
+    needWrite = true;
   }
 
-  public String select(QueryTable[] queryTables) {
-    // TODO
-    QueryResult queryResult = new QueryResult(queryTables);
-    return null;
-  }
-
-  private void recover() {
-    // TODO
-  }
-
-  public void quit() {
-    // TODO
-  }
-
-  /**
-   * @描述 清除掉这个数据库的所有表、metadata和目录
-   * 我暂时不知道和drop有啥区别
-   */
   public void clear() {
     // TODO
+    dropAllTable();
+    File dbFile = new File(dirName + name + ".db");
+    if (dbFile.exists()) {
+      dbFile.delete();
+    }
+    File dbDir = new File(dirName);
+    if (dbDir.exists()) {
+      dbDir.delete();
+    }
   }
 
   /**

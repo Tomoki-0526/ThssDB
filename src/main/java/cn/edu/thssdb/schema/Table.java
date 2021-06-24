@@ -110,11 +110,12 @@ public class Table implements Iterable<Row> {
   public void insert(Row row) {
     // TODO
     Entry entry = row.getEntries().get(primaryIndex);
-    try{
-      index.put(entry,row);
-    }catch(DuplicateException e){
-
-    }
+//    try{
+//      index.put(entry,row);
+//    }catch( e){
+//
+//    }
+    index.put(entry,row);
     insertList.add(entry);
     needWrite = true;
   }
@@ -171,14 +172,34 @@ public class Table implements Iterable<Row> {
     pagePointer = IOUtils.nextPage(columns, fileName + ".data", pageNumber, rows, pagePointer);
   }
 
+  public void removeDataFile(){
+    File metaFile = new File(this.fileName + ".meta");
+    if (metaFile.exists()) {
+      metaFile.delete();
+    }
+    File dataFile = new File(this.fileName + ".data");
+    if (dataFile.exists()) {
+      dataFile.delete();
+    }
+  }
+
+
   public void writeToDisk() throws IOException {
-    IOUtils.deleteRow(fileName + ".data", updateList, columns, pageNum - 4, primaryIndex);
-    IOUtils.insertRow(fileName + ".data", updateList, columns, this, indexTree);
-    IOUtils.insertRow(fileName + ".data", insertList, columns, this, indexTree);
-    IOUtils.deleteRow(fileName + ".data", deleteList, columns, pageNum - 4, primaryIndex);
+    IOUtils.deleteRow(fileName + ".data", updateList, columns, pageNumber - 4, primaryIndex);
+    IOUtils.insertRow(fileName + ".data", updateList, columns, this, index);
+    IOUtils.insertRow(fileName + ".data", insertList, columns, this, index);
+    IOUtils.deleteRow(fileName + ".data", deleteList, columns, pageNumber - 4, primaryIndex);
     insertList.clear();
     deleteList.clear();
     updateList.clear();
   }
 
+  @Override
+  public Iterator<Row> iterator() {
+    return null;
+  }
+
+  public BPlusTree<Entry, Row> getIndexTree() {
+    return index;
+  }
 }

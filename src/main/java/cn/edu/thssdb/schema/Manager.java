@@ -4,10 +4,10 @@ import cn.edu.thssdb.exception.DBException;
 import cn.edu.thssdb.exception.DatabaseExistException;
 import cn.edu.thssdb.exception.DatabaseNotExistException;
 import cn.edu.thssdb.exception.DatabaseOccupiedException;
+import cn.edu.thssdb.io.IOUtils;
 import cn.edu.thssdb.transaction.Session;
 import cn.edu.thssdb.utils.Global;
 
-import javax.xml.crypto.Data;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -43,7 +43,7 @@ public class Manager {
     return Manager.ManagerHolder.INSTANCE;
   }
 
-  	public Manager() {
+  	public Manager() throws IOException {
 		File rootDir = new File(Global.ROOT_DIR);
 		if (!rootDir.exists())
 			rootDir.mkdirs();
@@ -53,10 +53,9 @@ public class Manager {
 	/**
 	 * 从metadata.db中读取数据
 	 */
-	private void loadMeta() {
+	private void loadMeta() throws IOException {
   		// TODO
-//		ArrayList<String> names = IOManager.loadMeta(metadataPath);
-		ArrayList<String> names = null;
+		ArrayList<String> names = IOUtils.loadMeta(metadataPath);
 		if(names != null){
 			databaseNames.addAll(names);
 		}
@@ -65,15 +64,15 @@ public class Manager {
 	/**
 	 * 向metadata.db中写入数据
 	 */
-	private void saveMeta() {
+	private void saveMeta() throws IOException {
 		// TODO
 		if(needWrite){
-
+			IOUtils.saveMeta(metadataPath,databaseNames);
 			needWrite = false;
 		}
 	}
 
-  	public void createDatabaseIfNotExists(String databaseName) throws DBException {
+  	public void createDatabaseIfNotExists(String databaseName) throws DBException, IOException {
     	/* 检查数据库是否已存在 */
 		if (databaseNames.contains(databaseName)) {
 			throw new DatabaseExistException(databaseName + "already exists.");
@@ -87,7 +86,7 @@ public class Manager {
 		saveMeta();
 	}
 
-  	public void deleteDatabase(Session session, String databaseName) throws DBException{
+  	public void deleteDatabase(Session session, String databaseName) throws DBException, IOException {
   		/* 检查数据库是否存在 */
 		if (!databaseNames.contains(databaseName)) {
 			throw new DatabaseNotExistException(databaseName + "doesn't exists.");
@@ -124,7 +123,7 @@ public class Manager {
 		saveMeta();
   	}
 
-  	public void switchDatabase(Session session, String targetDatabaseName) throws DBException {
+  	public void switchDatabase(Session session, String targetDatabaseName) throws DBException, IOException {
 		/* 检查数据库是否存在 */
 		if (!databaseNames.contains(targetDatabaseName)) {
 			throw new DatabaseNotExistException(targetDatabaseName + "doesn't exists.");
@@ -209,12 +208,19 @@ public class Manager {
 		}
 	}
 
-  	private static class ManagerHolder {
-    	private static final Manager INSTANCE = new Manager();
-    	private ManagerHolder() {
+	private static class ManagerHolder {
+		private static Manager INSTANCE = null;
 
-    	}
-  	}
+		static {
+			try {
+				INSTANCE = new Manager();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		private ManagerHolder() {
+		}
+	}
 
 	/**
 	 * 申请写锁 acquireManagerWriteLock
