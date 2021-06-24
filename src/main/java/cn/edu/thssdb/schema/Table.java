@@ -14,6 +14,7 @@ public class Table implements Iterable<Row> {
   public ArrayList<Column> columns;
   public BPlusTree<Entry, Row> index;
   private int primaryIndex;
+  private BPlusTree<Entry, Row> indexTree;
 
   public Table(String databaseName, String tableName, Column[] columns) {
     // TODO
@@ -66,4 +67,13 @@ public class Table implements Iterable<Row> {
   public Iterator<Row> iterator() {
     return new TableIterator(this);
   }
+
+  public ArrayList<Column> getColumns() {
+    return columns;
+  }
+
+  public BPlusTree<Entry, Row> getIndexTree() {
+    return indexTree;
+  }
+
 }

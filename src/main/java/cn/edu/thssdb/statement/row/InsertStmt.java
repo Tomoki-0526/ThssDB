@@ -75,6 +75,19 @@ public class InsertStmt extends ExecuteStatement {
         }
     }
 
+    public void getValues(ArrayList res) {
+
+        res.addAll(values);
+    }
+
+    public int getPrimaryIndex() {
+        return this.table.getPrimaryIndex();
+    }
+
+    public String getTableName() {
+        return this.tableName;
+    }
+
     @Override
     public void writeToDisk(Session systemSession) throws Exception {
         Database database = systemSession.getDatabase();
