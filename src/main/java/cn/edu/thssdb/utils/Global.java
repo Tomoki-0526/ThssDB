@@ -49,4 +49,20 @@ public class Global {
 
   /* 数据根目录 */
   public static final String ROOT_DIR = System.getProperty("user.dir") + File.separator + "root" + File.separator;
+
+  /* 各种operator */
+  public static final String EQ_STR = "=";
+  public static final String NE_STR = "<>";
+  public static final String LE_STR = "<=";
+  public static final String GE_STR = ">=";
+  public static final String LT_STR = "<";
+  public static final String GT_STR = ">";
+
+  public static final String AND_STR = "&&";
+  public static final String OR_STR = "||";
+
+  public static final String ADD_STR = "+";
+  public static final String MINUS_STR = "-";
+  public static final String MULTIPLY_STR = "*";
+  public static final String DIVIDE_STR = "/";
 }

@@ -83,4 +83,13 @@ public class Entry implements Comparable<Entry>, Serializable {
 
     return true;
   }
+
+  public Comparable getValue() {
+    return this.value;
+  }
+
+  public void setValue(Comparable value) {
+    this.value = value;
+  }
+
 }
