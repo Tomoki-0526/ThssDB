@@ -4,7 +4,7 @@ import cn.edu.thssdb.index.BPlusTreeIterator;
 import cn.edu.thssdb.schema.Entry;
 import cn.edu.thssdb.schema.Row;
 import cn.edu.thssdb.schema.Table;
-import javafx.util.Pair;
+import cn.edu.thssdb.utils.Pair;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -36,6 +36,6 @@ public class QueryTable implements Iterator<Row> {
 
   @Override
   public Row next() {
-    return iterator.next().getValue();
+    return iterator.next().right;
   }
 }

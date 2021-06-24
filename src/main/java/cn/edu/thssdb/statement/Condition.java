@@ -8,7 +8,7 @@ import cn.edu.thssdb.type.ColumnType;
 import cn.edu.thssdb.type.CompareOperation;
 import cn.edu.thssdb.type.LogicOperation;
 import cn.edu.thssdb.utils.Tool;
-import javafx.util.Pair;
+import cn.edu.thssdb.utils.Pair;
 
 public class Condition {
 
@@ -43,13 +43,13 @@ public class Condition {
                 Pair<ColumnType, Comparable> rightResult = ((Expression) this.rightNode).calculateResult(columns, entries);
 
                 // 处理 null 的情况
-                if (leftResult.getValue() == null || rightResult.getValue() == null) {
+                if (leftResult.right == null || rightResult.right == null) {
                     return false;
                 }
 
                 CompareOperation compareOP = (CompareOperation) this.operation;
-                ColumnType leftType = leftResult.getKey();
-                ColumnType rightType = rightResult.getKey();
+                ColumnType leftType = leftResult.left;
+                ColumnType rightType = rightResult.left;
                 ColumnType targetType = Expression.getResultType(leftType, rightType);
 
                 // 不允许 string 和 非string 进行比较
@@ -60,11 +60,11 @@ public class Condition {
                 // 进行类型转换
                 Comparable leftValue, rightValue;
                 if (leftType != rightType) {
-                    leftValue = Expression.convertToTargetType(leftResult.getValue(), targetType);
-                    rightValue = Expression.convertToTargetType(rightResult.getValue(), targetType);
+                    leftValue = Expression.convertToTargetType(leftResult.right, targetType);
+                    rightValue = Expression.convertToTargetType(rightResult.right, targetType);
                 } else {
-                    leftValue = leftResult.getValue();
-                    rightValue = rightResult.getValue();
+                    leftValue = leftResult.right;
+                    rightValue = rightResult.right;
                 }
                 // 计算结果
                 return calculateCompareResult(leftValue, rightValue, targetType, compareOP);

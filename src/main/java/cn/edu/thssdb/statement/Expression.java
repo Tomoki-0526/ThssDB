@@ -8,7 +8,7 @@ import cn.edu.thssdb.schema.Entry;
 import cn.edu.thssdb.type.ColumnType;
 import cn.edu.thssdb.utils.Global;
 import cn.edu.thssdb.utils.Tool;
-import javafx.util.Pair;
+import cn.edu.thssdb.utils.Pair;
 
 
 public class Expression {
@@ -94,21 +94,21 @@ public class Expression {
             Pair<ColumnType, Comparable> rightResult = this.rightNode.calculateResult(columns, entries);
 
             // 先处理 null，涉及到 null 的算数计算结果都是 null
-            if (leftResult.getValue() == null || rightResult.getValue() == null) {
+            if (leftResult.right == null || rightResult.right == null) {
                 return new Pair<ColumnType, Comparable>(ColumnType.INT, null);
             }
 
-            ColumnType resultType = getResultType(leftResult.getKey(), rightResult.getKey());
+            ColumnType resultType = getResultType(leftResult.left, rightResult.left);
 
             // 两种类型不能进行计算
             if (resultType == ColumnType.STRING && !"+".equals(this.operation)) {
                 throw new SQLSyntaxException(String.format("Exception : operation %s not allowed between %s and %s",
-                        this.operation, Tool.columnTypeToString(leftResult.getKey()), Tool.columnTypeToString(rightResult.getKey())));
+                        this.operation, Tool.columnTypeToString(leftResult.left), Tool.columnTypeToString(rightResult.left)));
             }
 
             // 转换到最终类型
-            Comparable leftValue = convertToTargetType(leftResult.getValue(), resultType);
-            Comparable rightValue = convertToTargetType(rightResult.getValue(), resultType);
+            Comparable leftValue = convertToTargetType(leftResult.right, resultType);
+            Comparable rightValue = convertToTargetType(rightResult.right, resultType);
 
             // 继续计算
             Comparable resultValue;

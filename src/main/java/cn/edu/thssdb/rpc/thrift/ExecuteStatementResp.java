@@ -875,7 +875,8 @@ public class ExecuteStatementResp implements org.apache.thrift.TBase<ExecuteStat
       java.util.BitSet incoming = iprot.readBitSet(2);
       if (incoming.get(0)) {
         {
-          org.apache.thrift.protocol.TList _list15 = iprot.readListBegin(org.apache.thrift.protocol.TType.STRING);
+//          org.apache.thrift.protocol.TList _list15 = iprot.readListBegin(org.apache.thrift.protocol.TType.STRING);
+          org.apache.thrift.protocol.TList _list15 = iprot.readListBegin();
           struct.columnsList = new java.util.ArrayList<java.lang.String>(_list15.size);
           @org.apache.thrift.annotation.Nullable java.lang.String _elem16;
           for (int _i17 = 0; _i17 < _list15.size; ++_i17)
@@ -888,13 +889,15 @@ public class ExecuteStatementResp implements org.apache.thrift.TBase<ExecuteStat
       }
       if (incoming.get(1)) {
         {
-          org.apache.thrift.protocol.TList _list18 = iprot.readListBegin(org.apache.thrift.protocol.TType.LIST);
+//          org.apache.thrift.protocol.TList _list18 = iprot.readListBegin(org.apache.thrift.protocol.TType.LIST);
+          org.apache.thrift.protocol.TList _list18 = iprot.readListBegin();
           struct.rowList = new java.util.ArrayList<java.util.List<java.lang.String>>(_list18.size);
           @org.apache.thrift.annotation.Nullable java.util.List<java.lang.String> _elem19;
           for (int _i20 = 0; _i20 < _list18.size; ++_i20)
           {
             {
-              org.apache.thrift.protocol.TList _list21 = iprot.readListBegin(org.apache.thrift.protocol.TType.STRING);
+//              org.apache.thrift.protocol.TList _list21 = iprot.readListBegin(org.apache.thrift.protocol.TType.STRING);
+              org.apache.thrift.protocol.TList _list21 = iprot.readListBegin();
               _elem19 = new java.util.ArrayList<java.lang.String>(_list21.size);
               @org.apache.thrift.annotation.Nullable java.lang.String _elem22;
               for (int _i23 = 0; _i23 < _list21.size; ++_i23)
