@@ -29,6 +29,7 @@ public class Global {
   public static String NO_SUCH_TABLE = "No such table.";
   public static String INSERT_OK = "Insert a row successfully!";
   public static String NO_META = "Meta not found!";
+  public static String NO_FILE = "File not found!";
 
   public static String DEFAULT_SERVER_HOST = "127.0.0.1";
   public static int DEFAULT_SERVER_PORT = 6667;
