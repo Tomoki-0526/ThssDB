@@ -1,9 +1,11 @@
 package cn.edu.thssdb.io;
 
 import cn.edu.thssdb.index.BPlusTree;
+import cn.edu.thssdb.index.BPlusTreeIterator;
 import cn.edu.thssdb.schema.Column;
 import cn.edu.thssdb.schema.Entry;
 import cn.edu.thssdb.schema.Row;
+import cn.edu.thssdb.schema.Table;
 import cn.edu.thssdb.type.ColumnType;
 import cn.edu.thssdb.utils.Global;
 
@@ -159,6 +161,130 @@ public class IOUtils {
     }
 
     /**
+     * 写一行
+     * @param row
+     * @param accessFile
+     * @param columnList
+     * @throws IOException
+     */
+    public static void writeRow(Row row, RandomAccessFile accessFile, ArrayList<Column> columnList) throws IOException {
+        ArrayList<Entry> entries = row.getEntries();
+        for (int i = 0; i < entries.size(); ++i) {
+            Column column = columnList.get(i);
+            Entry entry = entries.get(i);
+            ColumnType type = column.getType();
+            if (type == ColumnType.INT) {
+                int val = Integer.parseInt(entry.value.toString());
+                IOBytes.writeInteger(accessFile, val, false);
+            }
+            else if (type == ColumnType.LONG) {
+                long val = Long.parseLong(entry.value.toString());
+                IOBytes.writeLong(accessFile, val, false);
+            }
+            else if(type == ColumnType.FLOAT) {
+                float val = Float.parseFloat(entry.value.toString());
+                IOBytes.writeFloat(accessFile, val, false);
+            }
+            else if(type == ColumnType.DOUBLE) {
+                double val = Double.parseDouble(entry.value.toString());
+                IOBytes.writeDouble(accessFile, val, false);
+            }
+            else if(type == ColumnType.STRING) {
+                String str = entry.value.toString();
+                IOBytes.writeString(accessFile, str, Global.SIZE_STRING, false);
+            }
+        }
+    }
+
+    /**
+     * 插入一行
+     * @param path
+     * @param insertRow
+     * @param columnList
+     * @param table
+     * @param indexTree
+     * @throws IOException
+     */
+    public static void insertRow(String path, ArrayList<Entry> insertRow, ArrayList<Column> columnList, Table table, BPlusTree<Entry, Row> indexTree) throws IOException {
+        RandomAccessFile accessFile = new RandomAccessFile(path, "rw");
+        int rowNum = IOBytes.readInteger(accessFile, false);
+        if (rowNum < 0)
+            rowNum = 0;
+        rowNum = rowNum + insertRow.size();
+        int pageNum = IOBytes.readInteger(accessFile, false);
+
+        ArrayList<Row> rowList = new ArrayList<>();
+        for (Entry entry: insertRow)
+            rowList.add(indexTree.get(entry));
+
+        int rowLen = getLength(columnList);
+        for (Row row: rowList) {
+            int pos = allocatePage(rowLen, accessFile);
+            accessFile.seek(pos);
+            writeRow(row, accessFile, columnList);
+        }
+
+        int newPageNum = (int)accessFile.length() / pageSize + 1;
+        accessFile.seek(0);
+        IOBytes.writeInteger(accessFile, rowNum, false);
+        IOBytes.writeInteger(accessFile, newPageNum, false);
+        table.setPageNum(newPageNum);
+    }
+
+    /**
+     * 删除一行
+     * @param path
+     * @param deleteRow 待删除的主键
+     * @param columnList
+     * @param filePageNum
+     * @param priIndex 主键在row的第几列
+     * @throws IOException
+     */
+    public static void deleteRow(String path, ArrayList<Entry> deleteRow, ArrayList<Column> columnList, int filePageNum, int priIndex) throws IOException {
+        RandomAccessFile accessFile = new RandomAccessFile(path, "rw");
+        long fileLen = accessFile.length();
+        filePageNum = (int)(fileLen / pageSize);
+        if (filePageNum * pageSize < fileLen)
+            filePageNum += 1;
+        int dataPageNum = filePageNum - 4;
+
+        int rowNum = IOBytes.readInteger(accessFile, false);
+        int pageIndex = 0;
+        int rowLen = getLength(columnList);
+        ArrayList<Row> rowList = new ArrayList<>();
+
+        /* 遍历所有页 */
+        while (deleteRow.size() != 0 && (pageIndex = nextPage(columnList, path, dataPageNum, rowList, pageIndex)) != 0) {
+            int deleteIndex = 0;
+            /* 查找这一页有没有需要删除的数据 */
+            for (int i = 0; i < rowList.size(); ++i) {
+                Entry entry = rowList.get(i).getEntries().get(priIndex);
+                for (int j = 0; j < deleteRow.size(); ++j) {
+                    if (equal(deleteRow.get(j), entry)) {
+                        rowList.remove(i);
+                        i -= 1;
+                        deleteRow.remove(j);
+                        j -= 1;
+                        if (deleteIndex == 0)
+                            deleteIndex = i + 1;
+                        rowNum--;
+                    }
+                }
+            }
+
+            /* 删除完成后，将这一页的内容写回文件 */
+            accessFile.seek((pageIndex + 3) * pageSize);
+            IOBytes.writeInteger(accessFile, rowLen * rowList.size() + headerLength, false);
+            accessFile.seek((pageIndex + 3) * pageSize + deleteIndex * rowLen + headerLength);
+            for (int k = deleteIndex; k < rowList.size(); ++k) {
+                writeRow(rowList.get(k), accessFile, columnList);
+            }
+            accessFile.seek(0);
+            IOBytes.writeInteger(accessFile, rowNum, false);
+        }
+    }
+
+    /**
      * 读取一页
      * @param pageIndex
      * @param rowLength
@@ -280,12 +406,105 @@ public class IOUtils {
 
     /**
      * 将一个表中的数据存储到文件
-     * @param tree
-     * @param columns
+     * @param bPlusTree
+     * @param columnList
      * @param path
      * @throws IOException
      */
-    public static void saveTableData(BPlusTree<Entry, Row> tree, ArrayList<Column> columns, String path) throws IOException {
+    public static void saveTableData(BPlusTree<Entry, Row> bPlusTree, ArrayList<Column> columnList, String path) throws IOException {
+        File file = new File(path);
+        if(!file.exists())
+            throw new FileNotFoundException(Global.NO_FILE);
 
+        int rowNum = bPlusTree.size();
+        int length = 0;
+        int pageNum = 0;
+        BPlusTreeIterator<Entry, Row> iter = bPlusTree.iterator();
+        RandomAccessFile accessFile = new RandomAccessFile(file, "rw");
+        IOBytes.writeInteger(accessFile, rowNum, false);
+
+        while (iter.hasNext()) {
+            Row row = iter.next().right;
+            length = getLength(columnList);
+            int pos = allocatePage(length, accessFile);
+            accessFile.seek(pos);
+            writeRow(row, accessFile, columnList);
+        }
+
+        pageNum = (int)accessFile.length() / pageSize + 1;
+        accessFile.seek(Global.SIZE_INT);
+        IOBytes.writeInteger(accessFile, pageNum, false);
+        accessFile.seek(2 * Global.SIZE_INT);
+        IOBytes.writeInteger(accessFile, 0, false);
+        accessFile.close();
     }
+
+    /**
+     * 从文件里读一个表的数据
+     * @param columnList
+     * @param path
+     * @return
+     * @throws IOException
+     */
+    public static ArrayList<ArrayList> loadTableData(ArrayList<Column> columnList, String path) throws IOException {
+        File file = new File(path);
+        if (!file.exists())
+            throw new FileNotFoundException(Global.NO_FILE);
+
+        RandomAccessFile accessFile = new RandomAccessFile(file, "r");
+        int count = 0;
+        boolean flag = true;
+        int len = getLength(columnList);
+        int rowNum = IOBytes.readInteger(accessFile, false);
+        int pageNum = IOBytes.readInteger(accessFile, false);
+        ArrayList<Row> rowList = new ArrayList<>();
+        ArrayList<Long> pointers = new ArrayList<>();
+        ArrayList<Integer> pageNumList = new ArrayList<>();
+        pageNumList.add(pageNum);
+        int pageIndex = 4;
+
+        while(count < rowNum) {
+            rowList.addAll(readPage(pageIndex, len, accessFile, columnList));
+            count = rowList.size();
+            pageIndex++;
+        }
+
+        accessFile.close();
+        ArrayList<ArrayList> list = new ArrayList<>();
+        list.add(rowList);
+        list.add(pointers);
+        list.add(pageNumList);
+        return list;
+    }
+
+    private static boolean equal(Entry e1, Entry e2) {
+        if(e1.getType() == ColumnType.INT)
+        {
+            int val1 = Integer.parseInt(e1.value.toString());
+            int val2 = Integer.parseInt(e2.value.toString());
+            return val1 == val2;
+        }
+        else if(e1.getType() == ColumnType.LONG)
+        {
+            long val1 = Long.parseLong(e1.value.toString());
+            long val2 = Long.parseLong(e2.value.toString());
+            return val1 == val2;
+        }
+        else if(e1.getType() == ColumnType.FLOAT)
+        {
+            float val1 = Float.parseFloat(e1.value.toString());
+            float val2 = Float.parseFloat(e2.value.toString());
+            return val1 == val2;
+        }
+        else if(e1.getType() == ColumnType.DOUBLE)
+        {
+            double val1 = Double.parseDouble(e1.value.toString());
+            double val2 = Double.parseDouble(e2.value.toString());
+            return val1 == val2;
+        }
+        else if(e1.getType() == ColumnType.STRING)
+            return e1.value.toString().equals(e2.value.toString());
+        return true;
+    }
+
 }

@@ -2,6 +2,10 @@ package cn.edu.thssdb.schema;
 
 import java.io.Serializable;
 
+import cn.edu.thssdb.exception.DBException;
+import cn.edu.thssdb.exception.NotNullException;
+import cn.edu.thssdb.exception.OverLengthException;
+import cn.edu.thssdb.exception.TypeNotMatchException;
 import cn.edu.thssdb.type.ColumnType;
 
 public class Entry implements Comparable<Entry>, Serializable {
@@ -59,26 +63,33 @@ public class Entry implements Comparable<Entry>, Serializable {
    * @param col
    * @return
    */
-  public boolean entryColumnMatching(Column col) throws Exception
+  public boolean entryColumnMatching(Column col) throws DBException
   {
     /* 检查非空性 */
     if (value == null)
     {
       if (col.isNotNull())
-        throw new Exception(col.getName() + " CANNOT be null.");
+        throw new NotNullException(col.getName() + " CANNOT be null.");
       return true;
     }
 
     /* 检查类型 */
     if (col.getType() != getType())
-      throw new Exception("Type not match.");
+      throw new TypeNotMatchException("Type not match.");
 
     /* 检查长度 */
     if (((String)value).length() > col.getMaxLength())
-    {
-      throw new Exception(col.getName() + "CANNOT be over " + col.getMaxLength());
-    }
+      throw new OverLengthException(col.getName() + "CANNOT be over " + col.getMaxLength());
 
     return true;
   }
+
+  public Comparable getValue() {
+    return this.value;
+  }
+
+  public void setValue(Comparable value) {
+    this.value = value;
+  }
+
 }

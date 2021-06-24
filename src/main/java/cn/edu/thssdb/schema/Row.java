@@ -1,5 +1,7 @@
 package cn.edu.thssdb.schema;
 
+import cn.edu.thssdb.exception.DBException;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,9 +40,9 @@ public class Row implements Serializable {
    * 检查元组和属性表是否匹配
    * @param columns
    * @return
-   * @throws Exception
+   * @throws DBException
    */
-  public boolean rowColumnsMatching(ArrayList<Column> columns) throws Exception
+  public boolean rowColumnsMatching(ArrayList<Column> columns) throws DBException
   {
     /* 检查元组和属性表长度 */
     if (entries.size() != columns.size())
